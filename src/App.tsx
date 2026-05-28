@@ -82,6 +82,7 @@ export default function App() {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   // 表單資料狀態
+  // 表單資料狀態
   const [formData, setFormData] = useState({
     name: "",
     selectedDrink: DEFAULT_MENU[0],
@@ -90,6 +91,37 @@ export default function App() {
     quantity: 1,
     totalPrice: DEFAULT_MENU[0].price
   });
+  // 將欲一次下單的多筆飲料暫存於此
+  const [cartItems, setCartItems] = useState([] as OrderItem[]);
+
+  // 加入目前選擇的飲料至購物車（暫存）
+  const handleAddToCart = () => {
+    if (!formData.selectedDrink) {
+      showToast("請先選擇飲料！", "warn");
+      return;
+    }
+    const newItem: OrderItem = {
+      orderId: undefined,
+      timestamp: undefined,
+      name: formData.name || "匿名",
+      drink: formData.selectedDrink.name,
+      sugar: formData.sugar,
+      ice: formData.ice,
+      quantity: formData.quantity,
+      totalPrice: formData.totalPrice
+    };
+    setCartItems(prev => [...prev, newItem]);
+    // 重置選擇，方便再次下單
+    setFormData(prev => ({
+      ...prev,
+      selectedDrink: DEFAULT_MENU[0],
+      sugar: "半糖",
+      ice: "少冰",
+      quantity: 1,
+      totalPrice: DEFAULT_MENU[0].price
+    }));
+    showToast("已加入購物車！", "success");
+  };
 
   // 編輯與篩選狀態
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
@@ -299,6 +331,54 @@ export default function App() {
         setActionLoading(false);
       }
     }
+  };
+
+  // 送出全部購物車項目
+  const handleSubmitCart = async () => {
+    if (cartItems.length === 0) {
+      showToast("購物車沒有任何項目！", "warn");
+      return;
+    }
+    setActionLoading(true);
+    for (const item of cartItems) {
+      const payload = {
+        action: "create",
+        data: item
+      };
+      if (isFallback || apiStatus === "offline") {
+        const localId = "local-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+        const newOrders = [...orders, { orderId: localId, timestamp: new Date().toISOString(), ...payload.data }];
+        setOrders(newOrders);
+        localStorage.setItem("office_drink_orders", JSON.stringify(newOrders));
+      } else {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 9500);
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          const result = await res.json();
+          if (!(result && result.status === "success")) {
+            throw new Error(result ? result.message : "發生異常");
+          }
+        } catch (err) {
+          console.error("寫入雲端失敗，已自動降級至本機:", err);
+          showToast("雲端連網出錯，已為您安全保存於本機", "warn");
+          setApiStatus("offline");
+          setIsFallback(true);
+        }
+      }
+    }
+    if (!(isFallback || apiStatus === "offline")) {
+      await loadData(true);
+    }
+    setCartItems([]);
+    setActionLoading(false);
+    showToast("所有訂單已送出！", "success");
   };
 
   // 按下編輯：載入值
@@ -662,7 +742,8 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Sugar Options */}
+                
+{/* Sugar Options */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">03. 甜度選擇</label>
                   <div className="grid grid-cols-5 gap-2">
@@ -731,7 +812,28 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Total and Submit Button Card */}
+<button
+  type="button"
+  onClick={handleAddToCart}
+  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-medium transition-colors disabled:opacity-50"
+>
+  <Plus className="w-4 h-4" />
+  加入購物車
+</button>
+{/* 顯示購物車內的飲料列表 */}
+          {cartItems.length > 0 && (
+            <div className="mt-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <h3 className="font-bold text-slate-800 mb-2">購物車（待送出）</h3>
+              <ul className="list-disc list-inside space-y-1">
+                {cartItems.map((item, idx) => (
+                  <li key={idx} className="text-sm text-slate-700">
+                    {item.name} - {item.drink} ({item.sugar}/{item.ice}) x{item.quantity} 元{item.totalPrice}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 pt-4 mt-4 flex items-center justify-between relative overflow-hidden">
                   <div>
                     <p className="text-xs text-slate-400 font-bold uppercase ml-0.5">預計總額</p>
