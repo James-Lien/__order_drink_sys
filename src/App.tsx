@@ -743,6 +743,17 @@ export default function App() {
                 </div>
 
                 
+<div className="mt-4">
+  <button
+    type="button"
+    onClick={handleAddToCart}
+    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-medium transition-colors disabled:opacity-50"
+  >
+    <Plus className="w-4 h-4" />
+    加入購物車
+  </button>
+</div>
+{/* Sugar Options */}
 {/* Sugar Options */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">03. 甜度選擇</label>
@@ -812,14 +823,8 @@ export default function App() {
                   </div>
                 </div>
 
-<button
-  type="button"
-  onClick={handleAddToCart}
-  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-medium transition-colors disabled:opacity-50"
->
-  <Plus className="w-4 h-4" />
-  加入購物車
-</button>
+
+
 {/* 顯示購物車內的飲料列表 */}
           {cartItems.length > 0 && (
             <div className="mt-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
