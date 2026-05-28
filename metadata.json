@@ -1,0 +1,6 @@
+{
+  "name": "辦公室飲料訂購系統",
+  "description": "精美的辦公室飲料訂購系統，提供今日菜單流暢點單、訂單編輯與自動化統計報表，操作極簡優雅。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
